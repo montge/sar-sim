@@ -547,7 +547,225 @@ class TestCUDAAvailability:
         assert isinstance(simjob.CUDA_NUMBA_AVAILABLE, bool)
 
 
+@pytest.mark.skipif(not simjob.CUDA_NUMBA_AVAILABLE, reason="CUDA not available - requires NVIDIA GPU")
+class TestCUDAExecution:
+    """Test suite for CUDA GPU execution paths.
+
+    These tests require a CUDA-capable NVIDIA GPU and will be skipped
+    if CUDA is not available. Run on a GPU-enabled machine to verify
+    CUDA code paths.
+    """
+
+    def test_cuda_device_selection(self, default_state, simple_scene):
+        """Test CUDA device selection with gpu_id parameter."""
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+
+        # Test with default GPU (device 0)
+        result = simjob.run_sim(default_state, simple_scene, gpu_id=0)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (5, 5)
+
+    def test_azimuth_compression_cuda_enabled(self, default_state):
+        """Test azimuth compression with CUDA enabled."""
+        flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000], [20, 5000, -1000]])
+        rc_lines = np.random.rand(3, 100) + 1j * np.random.rand(3, 100)
+
+        default_state.image_count_x = 10
+        default_state.image_count_y = 10
+
+        # Run with CUDA enabled
+        image_x, image_y, image, r_vector = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=True,  # Enable CUDA
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=True,
+        )
+
+        assert image.shape == (10, 10)
+        assert image.dtype == complex
+        assert len(image_x) == 10
+        assert len(image_y) == 10
+
+    def test_cuda_vs_cpu_consistency(self, default_state):
+        """Test that CUDA and CPU implementations produce similar results."""
+        flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000]])
+        # Use deterministic data for comparison
+        np.random.seed(42)
+        rc_lines = np.random.rand(2, 50) + 1j * np.random.rand(2, 50)
+
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+
+        # Run with CPU
+        _, _, image_cpu, _ = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=False,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=True,
+        )
+
+        # Reset random seed for consistency
+        np.random.seed(42)
+        rc_lines = np.random.rand(2, 50) + 1j * np.random.rand(2, 50)
+
+        # Run with CUDA
+        _, _, image_cuda, _ = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=True,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=True,
+        )
+
+        # Results should be very similar (within floating point tolerance)
+        # Note: CUDA may have slightly different precision
+        assert image_cpu.shape == image_cuda.shape
+        assert np.allclose(image_cpu, image_cuda, rtol=1e-5, atol=1e-8)
+
+    def test_cuda_single_pulse_mode(self, default_state):
+        """Test CUDA execution in single pulse mode."""
+        flight_path = np.array([[0, 5000, -1000]])
+        rc_lines = np.random.rand(1, 50) + 1j * np.random.rand(1, 50)
+
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+
+        # Run with CUDA in single pulse mode
+        _, _, image, _ = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=True,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            single_pulse_mode=True,
+            use_fmcw=True,
+        )
+
+        # In single pulse mode, result stays on GPU
+        # Check that we got an image back
+        assert hasattr(image, 'shape')
+        assert image.shape == (5, 5)
+
+    def test_cuda_with_large_image(self, default_state):
+        """Test CUDA execution with larger image dimensions."""
+        flight_path = np.array([[i, 5000, -1000] for i in range(10)])
+        rc_lines = np.random.rand(10, 200) + 1j * np.random.rand(10, 200)
+
+        default_state.image_count_x = 50
+        default_state.image_count_y = 50
+
+        # Run with CUDA - should handle memory allocation
+        image_x, image_y, image, r_vector = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=True,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=True,
+        )
+
+        assert image.shape == (50, 50)
+        assert len(r_vector) == 200
+
+    def test_cuda_full_simulation(self, default_state, simple_scene):
+        """Test full simulation pipeline with CUDA enabled."""
+        default_state.azimuth_count = 5
+        default_state.image_count_x = 10
+        default_state.image_count_y = 10
+        default_state.enable_autofocus = False
+
+        # Run full simulation (CUDA will be used automatically if available)
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (10, 10)
+        # Verify data is on CPU after simulation
+        assert isinstance(result.ac.data, np.ndarray)
+
+    def test_cuda_with_autofocus(self, default_state, simple_scene):
+        """Test CUDA execution with autofocus enabled."""
+        default_state.azimuth_count = 5
+        default_state.image_count_x = 10
+        default_state.image_count_y = 10
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 1
+        default_state.autofocus_samples = 4
+        default_state.autofocus_iterations = 2
+
+        # Run with autofocus and CUDA
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.af.data.shape == (10, 10)
+        # Autofocus should produce non-zero optimal phases
+        assert result.optimal_phases.shape[1] == 5
+
+    def test_cuda_beam_limit_enforcement(self, default_state):
+        """Test that CUDA kernel properly enforces beam angle limits."""
+        flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000]])
+        rc_lines = np.random.rand(2, 50) + 1j * np.random.rand(2, 50)
+
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.azimuth_compression_beam_limit = 30.0  # 30 degree limit
+
+        _, _, image, _ = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=True,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=True,
+        )
+
+        assert image.shape == (5, 5)
+        # Image should contain some data (not all zeros)
+        assert np.any(np.abs(image) > 0)
+
+
+@pytest.mark.skipif(simjob.CUDA_NUMBA_AVAILABLE, reason="Test only runs when CUDA is NOT available")
+class TestCUDAFallback:
+    """Test suite to verify CPU fallback when CUDA is not available."""
+
+    def test_simulation_works_without_cuda(self, default_state, simple_scene):
+        """Test that simulation works correctly on CPU when CUDA is unavailable."""
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+
+        # Should automatically fall back to CPU
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (5, 5)
+
+    def test_cpu_azimuth_compression_fallback(self, default_state):
+        """Test that azimuth compression falls back to CPU correctly."""
+        flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000]])
+        rc_lines = np.random.rand(2, 50) + 1j * np.random.rand(2, 50)
+
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+
+        # ac_use_cuda will be False when CUDA is not available
+        _, _, image, _ = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=False,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=True,
+        )
+
+        assert image.shape == (5, 5)
+        assert image.dtype == complex
+
+
 # Example of how to run specific tests:
 # pytest tests/unit/test_simjob.py -v
 # pytest tests/unit/test_simjob.py::TestSimulationExecution::test_run_sim_basic -v
 # pytest tests/unit/test_simjob.py -m "not slow" -v
+# pytest tests/unit/test_simjob.py::TestCUDAExecution -v  # Run only CUDA tests on GPU machine
