@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from sarsim import operations, simjob, simscene, simstate
+from sarsim import operations, sardata, simjob, simscene, simstate
 
 
 class TestSimResult:
@@ -762,6 +762,153 @@ class TestCUDAFallback:
 
         assert image.shape == (5, 5)
         assert image.dtype == complex
+
+
+class TestPartialBandwidthUsage:
+    """Test suite for range compression with partial bandwidth."""
+
+    def test_range_compression_with_partial_bandwidth(self, default_state, simple_scene):
+        """Test range compression when using less than full bandwidth."""
+        # Set range_compression_used_bandwidth to less than 100% to trigger lines 365-369
+        default_state.range_compression_used_bandwidth = 80.0  # 80% bandwidth
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        # Should complete successfully
+        assert result.ac.data.shape == (5, 5)
+        assert np.any(np.abs(result.ac.data) > 0)
+
+    def test_range_compression_with_various_bandwidths(self, default_state, simple_scene):
+        """Test range compression with different bandwidth values."""
+        default_state.azimuth_count = 2
+        default_state.image_count_x = 3
+        default_state.image_count_y = 3
+        default_state.enable_autofocus = False
+
+        # Test several partial bandwidth values (in percent)
+        for bandwidth in [50.0, 70.0, 90.0]:
+            default_state.range_compression_used_bandwidth = bandwidth
+            result = simjob.run_sim(default_state, simple_scene)
+            assert result.ac.data.shape == (3, 3)
+
+
+class TestAutofocusEdgeCases:
+    """Test suite for autofocus edge cases and advanced scenarios."""
+
+    def test_autofocus_with_multiple_rounds(self, default_state, simple_scene):
+        """Test autofocus with multiple rounds to trigger round > 0 code paths."""
+        default_state.azimuth_count = 5
+        default_state.image_count_x = 8
+        default_state.image_count_y = 8
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 2  # Multiple rounds triggers lines 591, 658
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        # Should complete successfully with autofocus
+        assert result.ac.data.shape == (8, 8)
+        assert np.any(np.abs(result.ac.data) > 0)
+
+    def test_autofocus_with_three_rounds(self, default_state, simple_scene):
+        """Test autofocus with three rounds for thorough coverage."""
+        default_state.azimuth_count = 4
+        default_state.image_count_x = 6
+        default_state.image_count_y = 6
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 3
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert result.ac.data.shape == (6, 6)
+        assert np.any(np.abs(result.ac.data) > 0)
+
+    def test_autofocus_edge_case_minimum_at_boundary(self, default_state):
+        """Test autofocus when minimum is at the edge of sample space."""
+        # Create a scene that might trigger edge case behavior
+        scene = simscene.create_reflector_array_scene(
+            count_x=3,
+            count_y=1,
+            start_x=-0.1,
+            start_y=5.0,
+            spacing_x=0.1,
+            spacing_y=0.0,
+            amplitude=1.0,
+        )
+
+        default_state.azimuth_count = 10
+        default_state.image_count_x = 12
+        default_state.image_count_y = 12
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 1
+        default_state.autofocus_samples = 8  # More samples to potentially hit edge cases
+
+        result = simjob.run_sim(default_state, scene)
+
+        # Should complete even if minimum is at boundary
+        assert result.ac.data.shape == (12, 12)
+
+    def test_autofocus_with_high_sample_count(self, default_state, simple_scene):
+        """Test autofocus with higher sample count to explore edge cases."""
+        default_state.azimuth_count = 6
+        default_state.image_count_x = 8
+        default_state.image_count_y = 8
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 1
+        default_state.autofocus_samples = 16  # High sample count
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert result.ac.data.shape == (8, 8)
+        assert np.any(np.abs(result.ac.data) > 0)
+
+
+class TestCombinedFeatures:
+    """Test suite for combinations of features."""
+
+    def test_partial_bandwidth_with_autofocus(self, default_state, simple_scene):
+        """Test combination of partial bandwidth and autofocus."""
+        default_state.range_compression_used_bandwidth = 75.0  # 75% bandwidth
+        default_state.azimuth_count = 5
+        default_state.image_count_x = 8
+        default_state.image_count_y = 8
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 2
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert result.ac.data.shape == (8, 8)
+        assert np.any(np.abs(result.ac.data) > 0)
+
+    def test_partial_bandwidth_with_loaded_data(self, default_state, simple_scene):
+        """Test partial bandwidth with loaded FMCW data."""
+        default_state.range_compression_used_bandwidth = 60.0  # 60% bandwidth
+
+        # Create loaded data
+        loaded_data = sardata.SarData()
+        loaded_data.flight_path = np.array([[0, 5000, -1000], [5, 5000, -1000], [10, 5000, -1000]])
+        loaded_data.fmcw_lines = [np.random.rand(100) + 1j * np.random.rand(100) for _ in range(3)]
+
+        result = simjob.run_sim(default_state, simple_scene, loaded_data=loaded_data)
+
+        assert result.fpath_exact.shape[0] == 3
+
+    def test_non_fmcw_with_autofocus(self, default_state, simple_scene):
+        """Test non-FMCW mode with autofocus enabled."""
+        default_state.use_fmcw = False
+        default_state.azimuth_count = 5
+        default_state.image_count_x = 8
+        default_state.image_count_y = 8
+        default_state.enable_autofocus = True
+        default_state.autofocus_rounds = 1
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert result.ac.data.shape == (8, 8)
+        assert np.any(np.abs(result.ac.data) > 0)
 
 
 # Example of how to run specific tests:
