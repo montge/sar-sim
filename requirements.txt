@@ -13,10 +13,12 @@ scipy==1.14.1
 PyGraph==0.2.1
 
 # GUI framework - SECURITY UPDATE
-# CVE-2024-30161 (CVSS 9.8) and CVE-2024-38394 (CVSS 8.6) fixed in 5.15.18
-PyQt5==5.15.18
+# Using latest available PyQt5 version
+# Note: CVE-2024-30161 and CVE-2024-38394 are Qt framework issues
+# PyQt5 5.15.11 is latest available on PyPI; monitor for Qt updates
+PyQt5==5.15.11
 PyQt5-Qt5==5.15.2
-PyQt5-sip==12.11.0
+PyQt5-sip>=12.15,<13
 
 # Plotting and visualization
 pyqtgraph==0.13.7

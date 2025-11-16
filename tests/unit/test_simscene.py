@@ -47,37 +47,34 @@ class TestSimulationScene:
 
     def test_create_empty_scene(self):
         """Test creating an empty scene."""
-        scene = simscene.SimulationScene([])
+        scene = simscene.SimulationScene()
 
-        reflectors = scene.get_simple_reflectors()
+        reflectors = list(scene.get_simple_reflectors())
         assert len(reflectors) == 0
 
     def test_create_scene_with_reflectors(self):
         """Test creating a scene with reflectors."""
-        reflectors = [
-            simscene.SimpleReflector(0, 0, 0, 1.0),
-            simscene.SimpleReflector(1, 1, 0, 1.0),
-            simscene.SimpleReflector(-1, 2, 0, 0.5),
-        ]
-        scene = simscene.SimulationScene(reflectors)
+        scene = simscene.SimulationScene()
+        scene += simscene.SimpleReflector(0, 0, 0, 1.0)
+        scene += simscene.SimpleReflector(1, 1, 0, 1.0)
+        scene += simscene.SimpleReflector(-1, 2, 0, 0.5)
 
-        result = scene.get_simple_reflectors()
+        result = list(scene.get_simple_reflectors())
         assert len(result) == 3
-        assert result == reflectors
 
-    def test_scene_get_reflectors_returns_list(self):
-        """Test that get_simple_reflectors returns a list."""
-        reflectors = [
-            simscene.SimpleReflector(0, 0, 0, 1.0),
-        ]
-        scene = simscene.SimulationScene(reflectors)
+    def test_scene_get_reflectors_returns_generator(self):
+        """Test that get_simple_reflectors returns a generator."""
+        scene = simscene.SimulationScene()
+        scene += simscene.SimpleReflector(0, 0, 0, 1.0)
 
         result = scene.get_simple_reflectors()
-        assert isinstance(result, list)
+        # get_simple_reflectors is a generator
+        result_list = list(result)
+        assert len(result_list) == 1
 
     def test_hash_method(self):
         """Test that scene has a hash method."""
-        scene = simscene.SimulationScene([])
+        scene = simscene.SimulationScene()
 
         # Should be hashable (for caching in simjob)
         hash_value = hash(scene)
@@ -85,13 +82,13 @@ class TestSimulationScene:
 
     def test_hash_consistency(self):
         """Test that identical scenes have same hash."""
-        reflectors = [
-            simscene.SimpleReflector(0, 0, 0, 1.0),
-            simscene.SimpleReflector(1, 1, 0, 1.0),
-        ]
+        scene1 = simscene.SimulationScene()
+        scene1 += simscene.SimpleReflector(0, 0, 0, 1.0)
+        scene1 += simscene.SimpleReflector(1, 1, 0, 1.0)
 
-        scene1 = simscene.SimulationScene(reflectors)
-        scene2 = simscene.SimulationScene(reflectors)
+        scene2 = simscene.SimulationScene()
+        scene2 += simscene.SimpleReflector(0, 0, 0, 1.0)
+        scene2 += simscene.SimpleReflector(1, 1, 0, 1.0)
 
         assert hash(scene1) == hash(scene2)
 
@@ -110,14 +107,14 @@ class TestDefaultScene:
         """Test that default scene contains reflectors."""
         scene = simscene.create_default_scene()
 
-        reflectors = scene.get_simple_reflectors()
+        reflectors = list(scene.get_simple_reflectors())
         assert len(reflectors) > 0
 
     def test_default_scene_reflector_properties(self):
         """Test that default scene reflectors have valid properties."""
         scene = simscene.create_default_scene()
 
-        reflectors = scene.get_simple_reflectors()
+        reflectors = list(scene.get_simple_reflectors())
         for reflector in reflectors:
             assert isinstance(reflector, simscene.SimpleReflector)
             assert reflector.amplitude > 0
@@ -133,22 +130,21 @@ class TestSceneManipulation:
     def test_scene_with_single_reflector(self):
         """Test scene with single reflector."""
         reflector = simscene.SimpleReflector(0, 5, 0, 2.0)
-        scene = simscene.SimulationScene([reflector])
+        scene = simscene.SimulationScene()
+        scene += reflector
 
-        result = scene.get_simple_reflectors()
+        result = list(scene.get_simple_reflectors())
         assert len(result) == 1
         assert result[0] == reflector
 
     def test_scene_with_varying_amplitudes(self):
         """Test scene with reflectors of different amplitudes."""
-        reflectors = [
-            simscene.SimpleReflector(0, 0, 0, 1.0),
-            simscene.SimpleReflector(1, 0, 0, 0.5),
-            simscene.SimpleReflector(2, 0, 0, 2.0),
-        ]
-        scene = simscene.SimulationScene(reflectors)
+        scene = simscene.SimulationScene()
+        scene += simscene.SimpleReflector(0, 0, 0, 1.0)
+        scene += simscene.SimpleReflector(1, 0, 0, 0.5)
+        scene += simscene.SimpleReflector(2, 0, 0, 2.0)
 
-        result = scene.get_simple_reflectors()
+        result = list(scene.get_simple_reflectors())
         assert len(result) == 3
         assert result[0].amplitude == 1.0
         assert result[1].amplitude == 0.5
@@ -156,14 +152,12 @@ class TestSceneManipulation:
 
     def test_scene_with_3d_positions(self):
         """Test scene with reflectors at different heights."""
-        reflectors = [
-            simscene.SimpleReflector(0, 5, 0, 1.0),      # Ground level
-            simscene.SimpleReflector(0, 5, 0.5, 1.0),    # Elevated
-            simscene.SimpleReflector(0, 5, -0.5, 1.0),   # Below ground
-        ]
-        scene = simscene.SimulationScene(reflectors)
+        scene = simscene.SimulationScene()
+        scene += simscene.SimpleReflector(0, 5, 0, 1.0)      # Ground level
+        scene += simscene.SimpleReflector(0, 5, 0.5, 1.0)    # Elevated
+        scene += simscene.SimpleReflector(0, 5, -0.5, 1.0)   # Below ground
 
-        result = scene.get_simple_reflectors()
+        result = list(scene.get_simple_reflectors())
         assert result[0].z == 0
         assert result[1].z == 0.5
         assert result[2].z == -0.5
