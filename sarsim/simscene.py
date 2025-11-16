@@ -1,4 +1,4 @@
-from typing import NamedTuple, Union, List, TextIO
+from typing import List, NamedTuple, Union
 
 
 class SimpleReflector(NamedTuple):
@@ -6,18 +6,19 @@ class SimpleReflector(NamedTuple):
     Simplest possible reflector:
     Has zero size, one single coordinate and only the amplitude
     """
+
     x: float
     y: float
     z: float
     amplitude: float = 1.0
 
 
-class SimulationScene(object):
+class SimulationScene:
     def __init__(self):
         # These internal lists shall not be altered directly!
         self._simple_reflectors: List[SimpleReflector] = []
 
-    def __add__(self, other: Union[SimpleReflector]): # type: ignore (Union, because there could be more types later)
+    def __add__(self, other: Union[SimpleReflector]):  # type: ignore (Union, because there could be more types later)
         if isinstance(other, SimpleReflector):
             self._simple_reflectors.append(other)
         return self
@@ -31,9 +32,7 @@ class SimulationScene(object):
         :return: A hash useable for cache hinting
         """
         # TODO: Make this actually hashing sensibly for caching!
-        return hash(tuple(
-            map(hash, self._simple_reflectors)
-        ))
+        return hash(tuple(map(hash, self._simple_reflectors)))
 
 
 def create_default_scene() -> SimulationScene:
@@ -43,14 +42,14 @@ def create_default_scene() -> SimulationScene:
 
 
 def create_reflector_array_scene(
-        count_x: int = 1,
-        count_y: int = 1,
-        start_x: float = 0.0,
-        start_y: float = 0.0,
-        spacing_x: float = 0.0375,
-        spacing_y: float = 0.0375,
-        amplitude: float = 1,
-        z: float = 0.0
+    count_x: int = 1,
+    count_y: int = 1,
+    start_x: float = 0.0,
+    start_y: float = 0.0,
+    spacing_x: float = 0.0375,
+    spacing_y: float = 0.0375,
+    amplitude: float = 1,
+    z: float = 0.0,
 ) -> SimulationScene:
     s = SimulationScene()
     x = start_x

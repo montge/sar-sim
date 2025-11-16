@@ -1,21 +1,20 @@
 from typing import Tuple
 
-
 _SI_PREFIX = [
-    (1e12, 'T'),
-    (1e9, 'G'),
-    (1e6, 'M'),
-    (1e3, 'k'),
-    (1, ''),
-    (1e-3, 'm'),
-    (1e-6, 'u'),
-    (1e-9, 'n'),
-    (1e-12, 'p'),
-    (1e-15, 'f'),
+    (1e12, "T"),
+    (1e9, "G"),
+    (1e6, "M"),
+    (1e3, "k"),
+    (1, ""),
+    (1e-3, "m"),
+    (1e-6, "u"),
+    (1e-9, "n"),
+    (1e-12, "p"),
+    (1e-15, "f"),
 ]
 
 
-def choose_si_scale(value: float, unit: str = '') -> Tuple[float, str]:
+def choose_si_scale(value: float, unit: str = "") -> Tuple[float, str]:
     """
     Chooses a proper SI prefix for the given unit to represent a value.
     Then: Take the unscaled value, divide by factor to get scaled value.
@@ -25,16 +24,15 @@ def choose_si_scale(value: float, unit: str = '') -> Tuple[float, str]:
     """
     for factor, name in _SI_PREFIX:
         if value >= factor:
-            return factor, f'{name}{unit}'
+            return factor, f"{name}{unit}"
     return 1, unit
 
 
-def scale_si_unit(value: float, unit: str = '') -> Tuple[float, str]:
+def scale_si_unit(value: float, unit: str = "") -> Tuple[float, str]:
     factor, unit = choose_si_scale(value, unit)
     return value / factor, unit
 
 
-def format_si_unit(value: float, unit: str = '') -> str:
+def format_si_unit(value: float, unit: str = "") -> str:
     value, unit = scale_si_unit(value, unit)
-    return f'{value:.3f} {unit}'
-
+    return f"{value:.3f} {unit}"
