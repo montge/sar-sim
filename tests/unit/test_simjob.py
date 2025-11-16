@@ -377,6 +377,167 @@ class TestAzimuthCompression:
         assert image.shape == (5, 5)
 
 
+@pytest.mark.slow
+class TestLoadedDataScenarios:
+    """Test suite for simulation with pre-loaded data."""
+
+    def test_run_sim_with_loaded_fmcw_data(self, default_state, simple_scene):
+        """Test simulation using loaded FMCW data."""
+        from sarsim import sardata
+
+        # Create minimal loaded data
+        loaded_data = sardata.SarData()
+        loaded_data.flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000], [20, 5000, -1000]])
+        loaded_data.fmcw_lines = [np.random.rand(100) + 1j * np.random.rand(100) for _ in range(3)]
+
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+
+        result = simjob.run_sim(default_state, simple_scene, loaded_data=loaded_data)
+
+        # Should use the loaded flight path
+        assert isinstance(result, simjob.SimResult)
+        assert result.fpath_exact.shape[0] == 3
+
+    def test_run_sim_with_loaded_range_compressed_data(self, default_state, simple_scene):
+        """Test simulation using loaded range-compressed data."""
+        from sarsim import sardata
+
+        # Create loaded data with range-compressed data
+        loaded_data = sardata.SarData()
+        loaded_data.flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000]])
+        loaded_data.rg_comp_data = np.random.rand(2, 50) + 1j * np.random.rand(2, 50)
+        loaded_data.has_range_compressed_data = True  # Required flag
+
+        default_state.azimuth_count = 2
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+
+        result = simjob.run_sim(default_state, simple_scene, loaded_data=loaded_data)
+
+        # Should skip FMCW simulation and range compression
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (5, 5)
+
+
+class TestPhaseCorrection:
+    """Test suite for phase correction parameters."""
+
+    def test_inverted_phase_correction(self, default_state, simple_scene):
+        """Test simulation with inverted phase correction."""
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+        default_state.inverted_phase_correction = True
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (5, 5)
+
+    def test_normal_phase_correction(self, default_state, simple_scene):
+        """Test simulation with normal phase correction."""
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+        default_state.inverted_phase_correction = False
+
+        result = simjob.run_sim(default_state, simple_scene)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (5, 5)
+
+
+class TestNonFMCWMode:
+    """Test suite for non-FMCW data processing."""
+
+    def test_azimuth_compression_non_fmcw(self, default_state):
+        """Test azimuth compression with non-FMCW data."""
+        flight_path = np.array([[0, 5000, -1000], [10, 5000, -1000]])
+        rc_lines = np.random.rand(2, 50) + 1j * np.random.rand(2, 50)
+
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+
+        image_x, image_y, image, r_vector = simjob._azimuth_compression(
+            default_state,
+            ac_use_cuda=False,
+            flight_path=flight_path,
+            rc_lines=rc_lines,
+            use_fmcw=False,  # Non-FMCW mode
+        )
+
+        assert image.shape == (5, 5)
+        assert len(r_vector) == 50
+
+
+class TestFlightPathWiggles:
+    """Test suite for flight path wiggle parameters."""
+
+    def test_make_flight_path_with_wiggles(self):
+        """Test flight path creation with wiggle perturbations."""
+        state = simstate.SarSimParameterState()
+        state.azimuth_start_position = 0.0
+        state.azimuth_stop_position = 100.0
+        state.azimuth_count = 11
+        state.flight_height = 1000.0
+        state.flight_distance_to_scene_center = 5000.0
+        state.flight_wiggle_global_scale = 1.0
+        state.flight_wiggle_amplitude_azimuth = 1.0
+        state.flight_wiggle_amplitude_range = 0.5
+        state.flight_wiggle_amplitude_height = 0.2
+        state.flight_wiggle_frequency_azimuth = 0.1
+        state.flight_wiggle_frequency_range = 0.1
+        state.flight_wiggle_frequency_height = 0.1
+
+        flight_path = simjob._make_flight_path(state)
+
+        assert flight_path.shape == (11, 3)
+        # With wiggles, the path should not be perfectly straight
+        # But still start and end at the right positions
+        assert flight_path[0, 0] == pytest.approx(state.azimuth_start_position, abs=1.0)
+        assert flight_path[-1, 0] == pytest.approx(state.azimuth_stop_position, abs=1.0)
+
+
+class TestEdgeCases:
+    """Test suite for edge cases and error conditions."""
+
+    def test_minimal_simulation_configuration(self, simple_scene):
+        """Test simulation with minimal configuration."""
+        state = simstate.SarSimParameterState()
+        state.azimuth_count = 2  # Minimum viable count
+        state.image_count_x = 2
+        state.image_count_y = 2
+        state.enable_autofocus = False
+
+        result = simjob.run_sim(state, simple_scene)
+
+        assert isinstance(result, simjob.SimResult)
+        assert result.ac.data.shape == (2, 2)
+
+    def test_simulation_with_timestamper(self, default_state, simple_scene):
+        """Test simulation with custom timestamper."""
+        from sarsim import profiling
+
+        timestamper = profiling.TimeStamper()
+
+        default_state.azimuth_count = 3
+        default_state.image_count_x = 5
+        default_state.image_count_y = 5
+        default_state.enable_autofocus = False
+
+        result = simjob.run_sim(default_state, simple_scene, timestamper=timestamper)
+
+        assert isinstance(result, simjob.SimResult)
+        # Timestamper should have been used (verified by no errors)
+        assert result.ac.data.shape == (5, 5)
+
+
 class TestCUDAAvailability:
     """Test suite for CUDA availability detection."""
 
