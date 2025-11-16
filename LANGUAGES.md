@@ -4,9 +4,11 @@ This document outlines the programming languages and technologies used in the SA
 
 ## Primary Language
 
-### Python (3.8-3.13)
+### Python (3.10-3.13)
 - **Primary language** for all simulation logic, GUI, and data processing
-- **Version support**: Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13
+- **Version support**: Python 3.10, 3.11, 3.12, 3.13 (actively supported versions)
+- **Future support**: Python 3.14 (when released in October 2025)
+- **Dropped support**: Python 3.8 (EOL October 2024), Python 3.9 (EOL October 2025)
 - **Files**: All `.py` files in `sarsim/` and `tests/` directories (25 Python files)
 - **Total coverage**: 40.54% (161 passing tests)
 
@@ -95,7 +97,7 @@ All tools are Python-based:
 
 ### Recommended Setup
 ```bash
-# Python 3.8+ required
+# Python 3.10+ required
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 

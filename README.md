@@ -3,7 +3,7 @@
 [![Tests](https://github.com/montge/sar-sim/actions/workflows/tests.yml/badge.svg)](https://github.com/montge/sar-sim/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/montge/sar-sim/actions/workflows/codeql.yml/badge.svg)](https://github.com/montge/sar-sim/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/montge/sar-sim/branch/main/graph/badge.svg)](https://codecov.io/gh/montge/sar-sim)
-[![Python 3.8-3.13](https://img.shields.io/badge/python-3.8--3.13-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10-3.13](https://img.shields.io/badge/python-3.10--3.13-blue.svg)](https://www.python.org/downloads/)
 
 The SAR Simulator is a graphical tool for FMCW radar simulation and interactive exploration of parameters.
 It can simulate FMCW radar signals based on an algorithmic scene description.
