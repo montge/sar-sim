@@ -6,14 +6,24 @@ This directory contains the test suite for the SAR Simulator project.
 
 ```
 tests/
-├── conftest.py              # Shared fixtures and configuration
-├── unit/                    # Unit tests for individual modules
-│   ├── test_siunits.py     # SI unit conversion tests
-│   ├── test_operations.py  # Signal processing operations tests
-│   └── ...                 # (more tests to be added)
-├── integration/            # Integration tests (to be created)
-└── fixtures/               # Test data and fixtures (to be created)
+├── conftest.py                   # Shared fixtures and configuration
+├── unit/                         # Unit tests for individual modules
+│   ├── test_siunits.py          # SI unit conversion tests (12 tests)
+│   ├── test_operations.py       # Signal processing operations tests (11 tests)
+│   ├── test_simstate.py         # Parameter state management tests (54 tests)
+│   ├── test_simscene.py         # Scene creation tests (11 tests)
+│   ├── test_profiling.py        # Profiling and timing tests (18 tests)
+│   └── test_sardata_security.py # File I/O security tests (15 tests)
+├── integration/                 # Integration tests
+│   └── test_simulation_pipeline.py  # End-to-end workflow tests (6 tests)
+└── README.md                    # This file
 ```
+
+**Test Statistics:**
+- Total Tests: 108 (107 passing, 1 skipped)
+- Code Coverage: 34.76%
+- Unit Tests: 101
+- Integration Tests: 6
 
 ## Running Tests
 
@@ -186,29 +196,43 @@ Benchmark and validate performance characteristics.
 
 ## Test Markers
 
-Use pytest markers to categorize tests:
+Pytest markers are registered in `pyproject.toml` and help categorize tests:
+
+### Registered Markers
+
+- `slow` - Marks tests as slow (deselect with `-m "not slow"`)
+- `integration` - Marks tests as integration tests
+- `unit` - Marks tests as unit tests
+
+### Using Markers
 
 ```python
+import pytest
+
 @pytest.mark.slow
 def test_long_running_operation():
     """This test takes a long time."""
-    pass
-
-@pytest.mark.gpu
-def test_cuda_kernel():
-    """This test requires GPU."""
     pass
 
 @pytest.mark.integration
 def test_full_pipeline():
     """This is an integration test."""
     pass
+
+@pytest.mark.unit
+def test_single_function():
+    """This is a unit test."""
+    pass
 ```
 
-Run specific markers:
+### Running Tests by Marker
+
 ```bash
-pytest -m "not slow"        # Skip slow tests
-pytest -m "gpu"             # Run only GPU tests
+pytest -m "not slow"        # Skip slow tests (recommended for development)
+pytest -m "slow"            # Run only slow tests
+pytest -m "unit"            # Run only unit tests
+pytest -m "integration"     # Run only integration tests
+pytest -m "unit or integration"  # Run unit or integration tests
 ```
 
 ## Fixtures
@@ -242,12 +266,18 @@ def my_fixture():
 
 ## Test Coverage Goals
 
-| Component | Current | Target | Priority |
-|-----------|---------|--------|----------|
-| Core Algorithms | 0% | 85% | High |
-| File I/O | 0% | 75% | High |
-| GUI | 0% | 40% | Low |
-| Utilities | 0% | 80% | Medium |
+| Component | Current | Target | Priority | Notes |
+|-----------|---------|--------|----------|-------|
+| simstate.py | 78.6% | 85% | High | Parameter management |
+| simscene.py | 71.9% | 80% | High | Scene creation |
+| sardata.py | 92.0% | 95% | High | File I/O with security |
+| profiling.py | 83.3% | 90% | Medium | Timing utilities |
+| operations.py | 83.3% | 85% | Medium | Window functions |
+| siunits.py | 69.4% | 80% | Medium | SI unit parsing |
+| simjob.py | 52.1% | 70% | High | Simulation execution |
+| gui.py | 0% | 30% | Low | GUI components |
+| commands.py | 0% | 60% | Medium | CLI commands |
+| Overall | **34.76%** | **70%** | High | Project-wide coverage |
 
 ## Continuous Integration
 
