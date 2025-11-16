@@ -1,9 +1,22 @@
-llvmlite==0.38.1
-numba==0.55.2
-numpy==1.22.0
+# Core Dependencies
+# Updated 2025-11-16 for security fixes and compatibility
+
+# LLVM and Numba for JIT compilation and CUDA support
+llvmlite==0.43.0
+numba==0.60.0
+
+# Scientific computing
+numpy==1.26.4
+scipy==1.14.1
+
+# Graph library
 PyGraph==0.2.1
-PyQt5==5.15.7
+
+# GUI framework - SECURITY UPDATE
+# CVE-2024-30161 (CVSS 9.8) and CVE-2024-38394 (CVSS 8.6) fixed in 5.15.18
+PyQt5==5.15.18
 PyQt5-Qt5==5.15.2
 PyQt5-sip==12.11.0
-pyqtgraph==0.12.4
-scipy==1.8.1
+
+# Plotting and visualization
+pyqtgraph==0.13.7

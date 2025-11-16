@@ -1,0 +1,31 @@
+# Development Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Include base requirements
+-r requirements.txt
+
+# Testing Framework
+pytest>=7.0
+pytest-cov>=4.0
+pytest-xdist>=3.0
+pytest-benchmark>=4.0
+pytest-mock>=3.12
+
+# Code Quality and Linting
+ruff>=0.1.0
+mypy>=1.0
+pre-commit>=3.0
+
+# Security Scanning
+pip-audit>=2.6
+safety>=3.0
+bandit>=1.7
+
+# Documentation
+mkdocs>=1.5
+mkdocs-material>=9.0
+mkdocstrings[python]>=0.24
+
+# Build and packaging
+build>=1.0
+twine>=4.0

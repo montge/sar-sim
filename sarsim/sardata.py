@@ -23,19 +23,45 @@ class SarData(object):
 
     @staticmethod
     def load_fmcw_binary(bin_file: str, lines: int, line_length: int) -> list:
+        # Security: Check file size before loading
+        file_size = os.path.getsize(bin_file)
+        expected_size = lines * line_length * 4  # 4 bytes per int
+        max_size = 10 * 1024 * 1024 * 1024  # 10 GB limit
+
+        if file_size > max_size:
+            raise ValueError(f"Binary file too large: {file_size} bytes (max {max_size})")
+
+        if file_size < expected_size:
+            raise ValueError(f"Binary file too small: expected {expected_size} bytes, got {file_size}")
+
         data = []
         with open(bin_file, 'rb') as f:
             for i in range(lines):
                 a = array.array('i')
                 assert a.itemsize == 4, "sizeof(int) != 4"
-                a.fromfile(f, line_length)
+                try:
+                    a.fromfile(f, line_length)
+                except EOFError:
+                    raise ValueError(f"Unexpected end of file at line {i}/{lines}")
                 data.append(np.array(a, dtype=np.single)/2.0**15)
         return data
 
     @staticmethod
     def load_range_comp_binary(bin_file: str, lines: int) -> np.ndarray:
+        # Security: Check file size before loading
+        file_size = os.path.getsize(bin_file)
+        max_size = 10 * 1024 * 1024 * 1024  # 10 GB limit
+
+        if file_size > max_size:
+            raise ValueError(f"Binary file too large: {file_size} bytes (max {max_size})")
+
+        if file_size == 0:
+            raise ValueError("Binary file is empty")
+
         with open(bin_file, 'rb') as f:
             data = np.fromfile(f, dtype=np.complex64)
+            if len(data) % lines != 0:
+                raise ValueError(f"Data size {len(data)} is not divisible by number of lines {lines}")
             return data.reshape((lines, -1))
 
     def _load_cfg_values(self):
@@ -143,9 +169,17 @@ class SarData(object):
     @classmethod
     def import_from_directory(cls, directory: str) -> 'SarData':
         sd = SarData()
+
+        # Security: Normalize and validate path
+        directory = os.path.abspath(directory)
+
+        # Security: Verify it's actually a directory
+        if not os.path.isdir(directory):
+            raise FileNotFoundError(f"Directory not found or is not a directory: {directory}")
+
         capture_id = os.path.basename(directory)
         if not capture_id.rstrip("/").endswith('.sardata'):
-            raise Exception("Selected folder does not look like a valid *.sardata archive.")
+            raise ValueError("Selected folder does not look like a valid *.sardata archive.")
         capture_id = capture_id[0:-8]
         sd.name = capture_id
 
