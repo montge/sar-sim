@@ -21,6 +21,10 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
 ]
 
 dependencies = [
@@ -28,7 +32,7 @@ dependencies = [
     "numba>=0.55.2",
     "numpy>=1.22.0",
     "PyGraph>=0.2.1",
-    "PyQt5>=5.15.18",  # Updated for security fixes
+    "PyQt5>=5.15.11",  # Updated for security fixes (CVE-2024-30161, CVE-2024-38394)
     "pyqtgraph>=0.12.4",
     "scipy>=1.8.1",
 ]
