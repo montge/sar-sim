@@ -11,6 +11,12 @@ coverage.xml
 .pytest_cache/
 *.py,cover
 
+# Build artifacts
+*.egg-info/
+build/
+dist/
+*.egg
+
 # Environments and IDEs
 venv/
 .idea/
