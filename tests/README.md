@@ -8,21 +8,22 @@ This directory contains the test suite for the SAR Simulator project.
 tests/
 ├── conftest.py                   # Shared fixtures and configuration
 ├── unit/                         # Unit tests for individual modules
-│   ├── test_siunits.py          # SI unit conversion tests (12 tests)
+│   ├── test_commands.py         # Command scripting tests (25 tests)
 │   ├── test_operations.py       # Signal processing operations tests (11 tests)
-│   ├── test_simstate.py         # Parameter state management tests (54 tests)
-│   ├── test_simscene.py         # Scene creation tests (11 tests)
 │   ├── test_profiling.py        # Profiling and timing tests (18 tests)
-│   └── test_sardata_security.py # File I/O security tests (15 tests)
+│   ├── test_sardata_security.py # File I/O security tests (15 tests)
+│   ├── test_simscene.py         # Scene creation tests (11 tests)
+│   ├── test_simstate.py         # Parameter state management tests (54 tests)
+│   └── test_siunits.py          # SI unit conversion tests (12 tests)
 ├── integration/                 # Integration tests
 │   └── test_simulation_pipeline.py  # End-to-end workflow tests (6 tests)
 └── README.md                    # This file
 ```
 
 **Test Statistics:**
-- Total Tests: 108 (107 passing, 1 skipped)
-- Code Coverage: 34.76%
-- Unit Tests: 101
+- Total Tests: 133 (132 passing, 1 skipped)
+- Code Coverage: 39.86%
+- Unit Tests: 126
 - Integration Tests: 6
 
 ## Running Tests
@@ -268,16 +269,16 @@ def my_fixture():
 
 | Component | Current | Target | Priority | Notes |
 |-----------|---------|--------|----------|-------|
-| simstate.py | 78.6% | 85% | High | Parameter management |
-| simscene.py | 71.9% | 80% | High | Scene creation |
 | sardata.py | 92.0% | 95% | High | File I/O with security |
+| commands.py | **87.2%** | 90% | Medium | ✅ CLI commands |
 | profiling.py | 83.3% | 90% | Medium | Timing utilities |
 | operations.py | 83.3% | 85% | Medium | Window functions |
+| simstate.py | 78.6% | 85% | High | Parameter management |
+| simscene.py | 71.9% | 80% | High | Scene creation |
 | siunits.py | 69.4% | 80% | Medium | SI unit parsing |
 | simjob.py | 52.1% | 70% | High | Simulation execution |
 | gui.py | 0% | 30% | Low | GUI components |
-| commands.py | 0% | 60% | Medium | CLI commands |
-| Overall | **34.76%** | **70%** | High | Project-wide coverage |
+| Overall | **39.86%** | **70%** | High | Project-wide coverage |
 
 ## Continuous Integration
 

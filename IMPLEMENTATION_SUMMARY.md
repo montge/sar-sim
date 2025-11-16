@@ -32,23 +32,25 @@ This implementation addresses the initial repository assessment request, focusin
 ### 2. Test Coverage Improvements ✅
 
 **Before:** 0% test coverage
-**After:** 34.76% test coverage (107/108 tests passing)
+**After:** 39.86% test coverage (132/133 tests passing)
 
 **Test Suite Created:**
-- **108 total tests** (107 passing, 1 skipped)
-- **Unit tests:** 101 tests across 6 modules
+- **133 total tests** (132 passing, 1 skipped)
+- **Unit tests:** 126 tests across 7 modules
 - **Integration tests:** 6 end-to-end workflow tests
 - **Test files created:**
-  - `test_siunits.py` - 12 tests (SI unit conversion)
-  - `test_operations.py` - 11 tests (window functions)
+  - `test_commands.py` - 25 tests (command scripting) ⭐ NEW
   - `test_simstate.py` - 54 tests (parameter management)
-  - `test_simscene.py` - 11 tests (scene creation)
   - `test_profiling.py` - 18 tests (timing utilities)
   - `test_sardata_security.py` - 15 tests (file I/O security)
+  - `test_siunits.py` - 12 tests (SI unit conversion)
+  - `test_operations.py` - 11 tests (window functions)
+  - `test_simscene.py` - 11 tests (scene creation)
   - `test_simulation_pipeline.py` - 6 integration tests
 
 **Module-Specific Coverage:**
 - `sardata.py`: 92.0% (file I/O with security)
+- `commands.py`: 87.2% (CLI commands) ⭐ NEW
 - `profiling.py`: 83.3% (timing utilities)
 - `operations.py`: 83.3% (window functions)
 - `simstate.py`: 78.6% (parameter management)
