@@ -163,6 +163,108 @@ class TestSceneManipulation:
         assert result[2].z == -0.5
 
 
+class TestReflectorArrayScene:
+    """Test suite for reflector array scene creation."""
+
+    def test_create_reflector_array_basic(self):
+        """Test creating a basic reflector array."""
+        scene = simscene.create_reflector_array_scene(
+            count_x=2,
+            count_y=2,
+            start_x=0.0,
+            start_y=0.0,
+            spacing_x=1.0,
+            spacing_y=1.0,
+            amplitude=1.0,
+            z=0.0
+        )
+
+        reflectors = list(scene.get_simple_reflectors())
+        assert len(reflectors) == 4  # 2x2 grid
+
+    def test_create_reflector_array_single(self):
+        """Test creating a single reflector array."""
+        scene = simscene.create_reflector_array_scene(
+            count_x=1,
+            count_y=1,
+            start_x=5.0,
+            start_y=10.0,
+            amplitude=2.0,
+            z=1.0
+        )
+
+        reflectors = list(scene.get_simple_reflectors())
+        assert len(reflectors) == 1
+        assert reflectors[0].x == pytest.approx(5.0)
+        assert reflectors[0].y == pytest.approx(10.0)
+        assert reflectors[0].z == pytest.approx(1.0)
+        assert reflectors[0].amplitude == pytest.approx(2.0)
+
+    def test_create_reflector_array_positions(self):
+        """Test that reflector array positions are correct."""
+        scene = simscene.create_reflector_array_scene(
+            count_x=3,
+            count_y=2,
+            start_x=0.0,
+            start_y=0.0,
+            spacing_x=0.5,
+            spacing_y=0.5,
+            amplitude=1.0
+        )
+
+        reflectors = list(scene.get_simple_reflectors())
+        assert len(reflectors) == 6  # 3x2 grid
+
+        # First reflector at start position
+        assert reflectors[0].x == pytest.approx(0.0)
+        assert reflectors[0].y == pytest.approx(0.0)
+
+        # Second reflector in first column
+        assert reflectors[1].x == pytest.approx(0.0)
+        assert reflectors[1].y == pytest.approx(0.5)
+
+        # First reflector in second column
+        assert reflectors[2].x == pytest.approx(0.5)
+        assert reflectors[2].y == pytest.approx(0.0)
+
+    def test_create_reflector_array_with_defaults(self):
+        """Test creating reflector array with default parameters."""
+        scene = simscene.create_reflector_array_scene()
+
+        reflectors = list(scene.get_simple_reflectors())
+        assert len(reflectors) == 1  # Default is 1x1
+        assert reflectors[0].amplitude == 1.0
+        assert reflectors[0].z == 0.0
+
+    def test_create_reflector_array_large(self):
+        """Test creating a larger reflector array."""
+        scene = simscene.create_reflector_array_scene(
+            count_x=5,
+            count_y=5,
+            spacing_x=0.1,
+            spacing_y=0.1
+        )
+
+        reflectors = list(scene.get_simple_reflectors())
+        assert len(reflectors) == 25  # 5x5 grid
+
+    def test_create_reflector_array_negative_start(self):
+        """Test creating reflector array with negative start position."""
+        scene = simscene.create_reflector_array_scene(
+            count_x=2,
+            count_y=2,
+            start_x=-1.0,
+            start_y=-1.0,
+            spacing_x=1.0,
+            spacing_y=1.0
+        )
+
+        reflectors = list(scene.get_simple_reflectors())
+        assert len(reflectors) == 4
+        assert reflectors[0].x == pytest.approx(-1.0)
+        assert reflectors[0].y == pytest.approx(-1.0)
+
+
 class TestSceneGeometry:
     """Test suite for scene geometry."""
 
